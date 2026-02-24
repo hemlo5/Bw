@@ -1,0 +1,135 @@
+import React from 'react';
+import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
+import { articles } from '../data/mockData';
+import AdUnit from '../components/AdUnit';
+import { ArrowRight, FileText, Clock, TrendingUp } from 'lucide-react';
+
+export default function Home() {
+  const featuredArticles = articles.slice(0, 4);
+
+  return (
+    <>
+      <Helmet>
+        <title>Boardswallah - Board Exam Papers, Answer Keys & Analysis</title>
+        <meta name="description" content="Download CBSE Class 10 & 12 Question Papers, Answer Keys, and Exam Analysis immediately after exams. Fast, reliable, and student-friendly." />
+      </Helmet>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Main Content Column */}
+        <div className="lg:col-span-8 space-y-8">
+          
+          {/* Hero Section */}
+          <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <TrendingUp className="text-black" size={20} />
+                Latest Updates
+              </h2>
+              <span className="animate-pulse flex h-3 w-3 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {featuredArticles.map((article) => (
+                <Link to={`/article/${article.slug}`} key={article.id} className="block p-6 hover:bg-gray-50 transition-colors group">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800 mb-2 border border-gray-200">
+                        {article.category}
+                      </span>
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-600 mb-2 leading-tight">
+                        {article.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+                        {article.excerpt}
+                      </p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1"><Clock size={14} /> 2 hours ago</span>
+                        <span className="flex items-center gap-1"><FileText size={14} /> {article.type}</span>
+                      </div>
+                    </div>
+                    <div className="hidden sm:block shrink-0">
+                      <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                        <FileText size={32} />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <AdUnit slot="in-article" className="h-32 rounded-lg" />
+
+          {/* Quick Links Grid */}
+          <section className="grid sm:grid-cols-2 gap-4">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm">10</span>
+                Class 10 Resources
+              </h3>
+              <ul className="space-y-3">
+                <li><Link to="/category/class-10" className="flex items-center justify-between text-gray-700 hover:text-black font-medium text-sm"><span>Science Question Papers</span> <ArrowRight size={14} /></Link></li>
+                <li><Link to="/category/class-10" className="flex items-center justify-between text-gray-700 hover:text-black font-medium text-sm"><span>Maths Answer Keys</span> <ArrowRight size={14} /></Link></li>
+                <li><Link to="/category/class-10" className="flex items-center justify-between text-gray-700 hover:text-black font-medium text-sm"><span>Social Science Notes</span> <ArrowRight size={14} /></Link></li>
+              </ul>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm">12</span>
+                Class 12 Resources
+              </h3>
+              <ul className="space-y-3">
+                <li><Link to="/category/class-12" className="flex items-center justify-between text-gray-700 hover:text-black font-medium text-sm"><span>Physics Answer Key</span> <ArrowRight size={14} /></Link></li>
+                <li><Link to="/category/class-12" className="flex items-center justify-between text-gray-700 hover:text-black font-medium text-sm"><span>Accountancy Papers</span> <ArrowRight size={14} /></Link></li>
+                <li><Link to="/category/class-12" className="flex items-center justify-between text-gray-700 hover:text-black font-medium text-sm"><span>Chemistry Analysis</span> <ArrowRight size={14} /></Link></li>
+              </ul>
+            </div>
+          </section>
+
+        </div>
+
+        {/* Sidebar */}
+        <aside className="lg:col-span-4 space-y-8">
+          <AdUnit slot="sidebar" className="h-[300px] rounded-lg" />
+          
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="font-bold text-gray-900 mb-4">Join Our Community</h3>
+            <p className="text-sm text-gray-600 mb-4">Get instant notifications for Answer Keys via Telegram.</p>
+            <button className="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+              Join Telegram Channel
+            </button>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="font-bold text-gray-900 mb-4">Exam Schedule 2026</h3>
+            <ul className="space-y-4 text-sm">
+              <li className="flex gap-3">
+                <div className="flex-col flex items-center bg-gray-100 rounded p-1 min-w-[50px]">
+                  <span className="text-xs font-bold text-gray-500">MAR</span>
+                  <span className="text-lg font-bold text-gray-900">23</span>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">Accountancy</p>
+                  <p className="text-xs text-gray-500">Class 12 • 10:30 AM - 1:30 PM</p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <div className="flex-col flex items-center bg-gray-100 rounded p-1 min-w-[50px]">
+                  <span className="text-xs font-bold text-gray-500">MAR</span>
+                  <span className="text-lg font-bold text-gray-900">25</span>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">Business Studies</p>
+                  <p className="text-xs text-gray-500">Class 12 • 10:30 AM - 1:30 PM</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </>
+  );
+}
