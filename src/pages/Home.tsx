@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { articles } from '../data/mockData';
 import AdUnit from '../components/AdUnit';
+import ClassSelector from '../components/ClassSelector';
 import { ArrowRight, FileText, Clock, TrendingUp } from 'lucide-react';
 
 export default function Home() {
@@ -19,6 +20,9 @@ export default function Home() {
         {/* Main Content Column */}
         <div className="lg:col-span-8 space-y-8">
           
+          {/* Class Selector - Beautiful Aesthetic Options */}
+          <ClassSelector />
+
           {/* Hero Section */}
           <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">

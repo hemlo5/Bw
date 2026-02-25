@@ -7,6 +7,8 @@ import WebmasterDocs from './pages/WebmasterDocs';
 import StaticPage from './pages/StaticPage';
 import CategoryPage from './pages/Category';
 import ArchivePage from './pages/Archive';
+import AdminPanel from './pages/Admin/AdminPanel';
+import SubCategoryPage from './pages/SubCategory';
 
 // Static Content Data
 const aboutContent = `
@@ -49,7 +51,11 @@ export default function App() {
             
             {/* Dynamic Category Routes */}
             <Route path="/category/:cat" element={<CategoryPage />} />
+            <Route path="/category/:cat/:subcat" element={<SubCategoryPage />} />
             <Route path="/archive" element={<ArchivePage />} />
+
+            {/* Admin Panel */}
+            <Route path="/admin" element={<AdminPanel />} />
 
             {/* Static Pages */}
             <Route path="/about" element={<StaticPage title="About Us" content={aboutContent} />} />
