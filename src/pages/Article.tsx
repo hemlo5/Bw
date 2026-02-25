@@ -1,13 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
-import { articles } from '../data/mockData';
 import AdUnit from '../components/AdUnit';
 import { Calendar, User, Share2, Download, AlertTriangle } from 'lucide-react';
 
 export default function ArticlePage() {
   const { slug } = useParams();
-  const article = articles.find(a => a.slug === slug);
+  const [article, setArticle] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/articles/${slug}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Not found');
+        return res.json();
+      })
+      .then(data => {
+        setArticle(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, [slug]);
+
+  if (loading) {
+    return <div className="text-center py-20">Loading...</div>;
+  }
 
   if (!article) {
     return (
@@ -47,7 +66,7 @@ export default function ArticlePage() {
       <nav className="flex text-sm text-gray-500 mb-6 overflow-x-auto whitespace-nowrap">
         <Link to="/" className="hover:text-black">Home</Link>
         <span className="mx-2">/</span>
-        <Link to={`/category/${article.category.toLowerCase().replace(' ', '-')}`} className="hover:text-black">{article.category}</Link>
+        <Link to={`/class/${article.category.split(' ')[1]}`} className="hover:text-black">{article.category}</Link>
         <span className="mx-2">/</span>
         <span className="text-gray-900 font-medium truncate">{article.subject}</span>
       </nav>
@@ -58,7 +77,7 @@ export default function ArticlePage() {
           {/* Article Header */}
           <header className="mb-8">
             <div className="flex gap-2 mb-4">
-              <span className="px-2 py-1 bg-black text-white text-xs font-bold rounded uppercase tracking-wider">
+              <span className="px-2 py-1 text-white text-xs font-bold rounded uppercase tracking-wider" style={{ backgroundColor: 'var(--color-primary)' }}>
                 {article.type}
               </span>
               <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded uppercase tracking-wider">
@@ -86,7 +105,7 @@ export default function ArticlePage() {
 
           {/* Article Content */}
           <div 
-            className="prose prose-gray max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h2:text-gray-900 prose-p:text-gray-700 prose-a:text-black hover:prose-a:text-gray-600"
+            className="prose prose-gray max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h2:text-gray-900 prose-p:text-gray-700 prose-a:text-[var(--color-primary)] hover:prose-a:opacity-80"
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
 
@@ -94,7 +113,7 @@ export default function ArticlePage() {
           <div className="mt-8 pt-6 border-t border-gray-100">
             <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Related Topics</h3>
             <div className="flex flex-wrap gap-2">
-              {article.tags.map(tag => (
+              {article.tags.map((tag: string) => (
                 <Link to={`/tag/${tag.toLowerCase()}`} key={tag} className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors">
                   #{tag}
                 </Link>
@@ -104,7 +123,7 @@ export default function ArticlePage() {
 
           {/* Author Box */}
           <div className="mt-8 p-6 bg-gray-50 rounded-xl flex items-start gap-4">
-            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0" style={{ backgroundColor: 'var(--color-primary)' }}>
               B
             </div>
             <div>
