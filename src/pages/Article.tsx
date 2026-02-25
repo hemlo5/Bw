@@ -55,8 +55,16 @@ export default function ArticlePage() {
   return (
     <>
       <Helmet>
-        <title>{article.title} - Boardswallah</title>
+        <title>{article.title} | BoardsWallah</title>
         <meta name="description" content={article.excerpt} />
+        <link rel="canonical" href={`https://boardswallah.com/article/${slug}`} />
+        <meta property="og:title" content={article.title} />
+        <meta property="og:description" content={article.excerpt} />
+        <meta property="og:url" content={`https://boardswallah.com/article/${slug}`} />
+        <meta property="og:type" content="article" />
+        <meta property="og:image" content="https://boardswallah.com/logo.svg" />
+        <meta property="article:published_time" content={article.publishDate} />
+        <meta property="article:author" content={article.author} />
         <script type="application/ld+json">
           {JSON.stringify(schemaData)}
         </script>

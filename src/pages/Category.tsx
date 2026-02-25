@@ -17,8 +17,14 @@ export default function CategoryPage() {
   return (
     <>
       <Helmet>
-        <title>{categoryName} Resources - Boardswallah</title>
-        <meta name="description" content={`Download latest ${categoryName} question papers, answer keys, and notes.`} />
+        <title>{categoryName} Resources | BoardsWallah</title>
+        <meta name="description" content={`Download latest ${categoryName} question papers, answer keys, study materials and notes. Updated daily for CBSE Board Exams 2026.`} />
+        <link rel="canonical" href={`https://boardswallah.com/category/${cat}`} />
+        <meta property="og:title" content={`${categoryName} Resources | BoardsWallah`} />
+        <meta property="og:description" content={`Download latest ${categoryName} question papers, answer keys, and study materials.`} />
+        <meta property="og:url" content={`https://boardswallah.com/category/${cat}`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://boardswallah.com/logo.svg" />
       </Helmet>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

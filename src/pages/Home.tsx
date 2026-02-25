@@ -23,8 +23,14 @@ export default function Home() {
   return (
     <>
       <Helmet>
-        <title>Boardswallah - Board Exam Papers, Answer Keys & Analysis</title>
-        <meta name="description" content="Download CBSE Class 10 & 12 Question Papers, Answer Keys, and Exam Analysis immediately after exams. Fast, reliable, and student-friendly." />
+        <title>BoardsWallah - CBSE Board Exam Papers, Answer Keys & Analysis</title>
+        <meta name="description" content="Download CBSE Class 10 & 12 Question Papers, Answer Keys, and Exam Analysis immediately after exams. Fast, reliable, and free for all students." />
+        <link rel="canonical" href="https://boardswallah.com/" />
+        <meta property="og:title" content="BoardsWallah - CBSE Board Exam Papers & Answer Keys" />
+        <meta property="og:description" content="Download CBSE Class 10 & 12 Question Papers, Answer Keys, and Study Materials immediately after exams." />
+        <meta property="og:url" content="https://boardswallah.com/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://boardswallah.com/logo.svg" />
       </Helmet>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

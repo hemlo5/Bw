@@ -217,8 +217,14 @@ export default function SubCategoryPage() {
   return (
     <>
       <Helmet>
-        <title>{config.title} - {className} | Boardswallah</title>
+        <title>{config.title} - {className} | BoardsWallah</title>
         <meta name="description" content={config.description} />
+        <link rel="canonical" href={`https://boardswallah.com/category/${cat}/${subcat}`} />
+        <meta property="og:title" content={`${config.title} - ${className} | BoardsWallah`} />
+        <meta property="og:description" content={config.description} />
+        <meta property="og:url" content={`https://boardswallah.com/category/${cat}/${subcat}`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://boardswallah.com/logo.svg" />
         <script type="application/ld+json">{JSON.stringify(schemaData)}</script>
       </Helmet>
 

@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /admin
+Disallow: /api/
+Allow: /
+
+# Sitemap location
+Sitemap: https://boardswallah.com/sitemap.xml
