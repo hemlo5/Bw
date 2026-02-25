@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import AdUnit from '../components/AdUnit';
 import ClassSelector from '../components/ClassSelector';
+import { ExamScheduleBox, class10Exams, class12Exams } from '../components/ExamSchedule';
 import { ArrowRight, FileText, Clock, TrendingUp } from 'lucide-react';
 
 export default function Home() {
@@ -122,39 +123,19 @@ export default function Home() {
         <aside className="lg:col-span-4 space-y-8">
           <AdUnit slot="sidebar" className="h-[300px] rounded-lg" />
           
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-900 mb-4">Join Our Community</h3>
-            <p className="text-sm text-gray-600 mb-4">Get instant notifications for Answer Keys via Telegram.</p>
-            <button className="w-full text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-opacity hover:opacity-90" style={{ backgroundColor: 'var(--color-primary)' }}>
-              Join Telegram Channel
-            </button>
-          </div>
+          {/* Class 10 Exam Schedule - Scrollable with auto-scroll to today */}
+          <ExamScheduleBox 
+            title="Class 10 Exam Schedule 2026" 
+            exams={class10Exams} 
+            classNum={10} 
+          />
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-900 mb-4">Exam Schedule 2026</h3>
-            <ul className="space-y-4 text-sm">
-              <li className="flex gap-3">
-                <div className="flex-col flex items-center bg-gray-100 rounded p-1 min-w-[50px]">
-                  <span className="text-xs font-bold text-gray-500">MAR</span>
-                  <span className="text-lg font-bold text-gray-900">23</span>
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">Accountancy</p>
-                  <p className="text-xs text-gray-500">Class 12 • 10:30 AM - 1:30 PM</p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <div className="flex-col flex items-center bg-gray-100 rounded p-1 min-w-[50px]">
-                  <span className="text-xs font-bold text-gray-500">MAR</span>
-                  <span className="text-lg font-bold text-gray-900">25</span>
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">Business Studies</p>
-                  <p className="text-xs text-gray-500">Class 12 • 10:30 AM - 1:30 PM</p>
-                </div>
-              </li>
-            </ul>
-          </div>
+          {/* Class 12 Exam Schedule - Scrollable with auto-scroll to today */}
+          <ExamScheduleBox 
+            title="Class 12 Exam Schedule 2026" 
+            exams={class12Exams} 
+            classNum={12} 
+          />
         </aside>
       </div>
     </>
