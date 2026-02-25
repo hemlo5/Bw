@@ -50,9 +50,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="text-white p-1.5 rounded-lg" style={{ backgroundColor: settings.primaryColor }}>
-              <BookOpen size={24} />
-            </div>
+            <img src="/logo.svg" alt="Boardswallah" className="h-10 w-auto" />
             <span className="text-xl font-bold tracking-tight text-gray-900">
               Boards<span style={{ color: settings.primaryColor }}>wallah</span>
             </span>
