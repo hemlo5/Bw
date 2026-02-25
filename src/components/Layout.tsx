@@ -111,36 +111,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      {/* Class Selector Bar */}
-      <div className="bg-gray-100 border-b border-gray-200">
-        <div className="container mx-auto px-4 flex justify-center gap-4 py-3">
-          <Link
-            to="/class/10"
-            className={cn(
-              "px-6 py-2 rounded-full font-bold text-sm transition-colors",
-              location.pathname.startsWith('/class/10') 
-                ? "text-white" 
-                : "bg-white text-gray-700 hover:bg-gray-200 border border-gray-300"
-            )}
-            style={location.pathname.startsWith('/class/10') ? { backgroundColor: settings.primaryColor } : {}}
-          >
-            Class 10
-          </Link>
-          <Link
-            to="/class/12"
-            className={cn(
-              "px-6 py-2 rounded-full font-bold text-sm transition-colors",
-              location.pathname.startsWith('/class/12') 
-                ? "text-white" 
-                : "bg-white text-gray-700 hover:bg-gray-200 border border-gray-300"
-            )}
-            style={location.pathname.startsWith('/class/12') ? { backgroundColor: settings.primaryColor } : {}}
-          >
-            Class 12
-          </Link>
-        </div>
-      </div>
-
       {/* Header Ad Slot (Desktop Only) */}
       <div className="hidden md:block container mx-auto px-4 py-4">
         <div className="bg-gray-50 border border-gray-200 h-[90px] flex items-center justify-center text-gray-400 text-xs uppercase tracking-widest rounded-lg">
