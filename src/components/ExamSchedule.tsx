@@ -118,8 +118,12 @@ const ExamScheduleBox: React.FC<ExamScheduleBoxProps> = ({ title, exams, classNu
       </h3>
       <div 
         ref={scrollRef}
-        className="space-y-2 max-h-[280px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-        style={{ scrollBehavior: 'smooth' }}
+        className="space-y-2 max-h-[280px] overflow-y-auto pr-2"
+        style={{ 
+          scrollBehavior: 'smooth',
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#cbd5e1 #f1f5f9'
+        }}
       >
         {exams.map((exam, index) => (
           <div 
