@@ -24,11 +24,11 @@ export default function Home() {
   return (
     <>
       <Helmet>
-        <title>BoardsWallah - CBSE Board Exam Papers, Answer Keys & Analysis</title>
-        <meta name="description" content="Download CBSE Class 10 & 12 Question Papers, Answer Keys, and Exam Analysis immediately after exams. Fast, reliable, and free for all students." />
+        <title>Board Exam 2026 Papers & Answer Keys | BoardsWallah</title>
+        <meta name="description" content="Download Board Exam 2026 Question Papers & Answer Keys immediately after exams. Get CBSE Class 10 & 12 Board Paper 2026 with expert analysis. Fast & free!" />
         <link rel="canonical" href="https://boardswallah.com/" />
-        <meta property="og:title" content="BoardsWallah - CBSE Board Exam Papers & Answer Keys" />
-        <meta property="og:description" content="Download CBSE Class 10 & 12 Question Papers, Answer Keys, and Study Materials immediately after exams." />
+        <meta property="og:title" content="Board Exam 2026 Papers & Answer Keys | BoardsWallah" />
+        <meta property="og:description" content="Download Board Paper 2026 & Answer Keys immediately after exams. CBSE Class 10 & 12 Board Exam 2026 resources with expert analysis." />
         <meta property="og:url" content="https://boardswallah.com/" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://boardswallah.com/logo.svg" />
