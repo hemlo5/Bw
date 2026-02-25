@@ -61,12 +61,12 @@ export default function ClassSelector() {
   return (
     <section className="w-full">
       {/* Main Selection Cards */}
-      <div className="grid md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-2 gap-4 mb-8">
         {classOptions.map((option, index) => (
           <motion.button
             key={option.id}
             onClick={() => setSelectedClass(selectedClass === option.id ? null : option.id)}
-            className={`relative overflow-hidden rounded-2xl p-8 text-left transition-all duration-300 border-2 ${
+            className={`relative overflow-hidden rounded-2xl p-4 md:p-8 text-left transition-all duration-300 border-2 ${
               selectedClass === option.id 
                 ? `${option.gradient} border-opacity-100 shadow-lg scale-[1.02]` 
                 : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md'
@@ -77,11 +77,13 @@ export default function ClassSelector() {
             whileHover={{ scale: selectedClass === option.id ? 1.02 : 1.01 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${option.color} text-white flex items-center justify-center mb-4 shadow-lg`}>
-              {option.icon}
+            <div className="flex flex-col items-center justify-center">
+              <div className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br ${option.color} text-white flex items-center justify-center mb-2 md:mb-4 shadow-lg`}>
+                {option.icon}
+              </div>
+              <h3 className="text-lg md:text-2xl font-bold text-gray-900 mb-2 text-center">{option.title}</h3>
+              <p className="hidden md:block text-base text-gray-600 text-center">Board Exam Resources & Study Materials</p>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">{option.title}</h3>
-            <p className="text-gray-600">Board Exam Resources & Study Materials</p>
             
             {selectedClass === option.id && (
               <motion.div 

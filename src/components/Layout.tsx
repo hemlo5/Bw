@@ -50,9 +50,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Boardswallah" className="h-10 w-auto" />
+            <img src="/logo.svg" alt="Boards Wallah" className="h-10 w-auto" />
             <span className="text-xl font-bold tracking-tight text-gray-900">
-              Boards<span style={{ color: settings.primaryColor }}>wallah</span>
+              Boards <span style={{ color: settings.primaryColor }}>Wallah</span>
             </span>
           </Link>
 
@@ -127,7 +127,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 mb-4 text-white">
               <BookOpen size={24} />
-              <span className="text-xl font-bold">Boardswallah</span>
+              <span className="text-xl font-bold">Boards Wallah</span>
             </div>
             <p className="text-sm text-gray-400 mb-6 max-w-md">
               India's fastest growing education portal for Board Exam resources. 
@@ -164,7 +164,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <div className="container mx-auto px-4 mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
           <div>
-            <p>&copy; {new Date().getFullYear()} Boardswallah. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Boards Wallah. All rights reserved.</p>
             <p className="mt-2">Disclaimer: We are not affiliated with CBSE, ICSE, or any state board. All papers are uploaded after the exam for analysis.</p>
           </div>
           <div className="mt-4 md:mt-0">
