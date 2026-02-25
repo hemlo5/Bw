@@ -1,9 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import ArticlePage from './pages/Article';
-import WebmasterDocs from './pages/WebmasterDocs';
 import StaticPage from './pages/StaticPage';
 import CategoryPage from './pages/Category';
 import ArchivePage from './pages/Archive';
@@ -47,7 +46,6 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/article/:slug" element={<ArticlePage />} />
-            <Route path="/webmaster-guide" element={<WebmasterDocs />} />
             
             {/* Dynamic Category Routes */}
             <Route path="/category/:cat" element={<CategoryPage />} />

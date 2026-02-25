@@ -162,5 +162,4 @@ export const navLinks = [
   { name: 'Class 10', href: '/category/class-10' },
   { name: 'Class 12', href: '/category/class-12' },
   { name: 'Previous Papers', href: '/archive' },
-  { name: 'Webmaster Guide', href: '/webmaster-guide' },
 ];
