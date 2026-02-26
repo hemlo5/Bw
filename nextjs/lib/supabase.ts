@@ -1,17 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 
-// ─── Env vars ────────────────────────────────────────────────────────────────
+// ─── Env / client setup ───────────────────────────────────────────────────────
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
-// Only create real client when both values look like real credentials
 const hasValidCreds =
   supabaseUrl.startsWith('https://') &&
   !supabaseUrl.includes('example.supabase.co') &&
   supabaseKey.length > 20
 
-// ─── Mock client for build time / missing env vars ───────────────────────────
 const createMockClient = () =>
 ({
   from: (_: string) => ({
@@ -31,9 +29,6 @@ const createMockClient = () =>
 export const supabase = hasValidCreds
   ? createClient(supabaseUrl, supabaseKey)
   : createMockClient()
-
-// ─── Shared cache TTL ─────────────────────────────────────────────────────────
-const CACHE_TTL = 3600 // 1 hour
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -74,27 +69,46 @@ export interface ExamSchedule {
   time: string
 }
 
-// ─── Article queries (cached) ─────────────────────────────────────────────────
+// ─── Article cache (60s TTL — new articles appear within 1 minute) ────────────
+// NOTE: unstable_cache automatically includes function *arguments* in the cache key.
+// So getCachedArticles('{"limit":10}') and getCachedArticles('{"category":"Class 12"}')
+// are cached as SEPARATE entries. This fixes the shared-key bug.
 
-export const getArticles = unstable_cache(
-  async (filters?: { category?: string; type?: string; limit?: number; featured?: boolean }) => {
+const getCachedArticles = unstable_cache(
+  async (filtersJson: string) => {
     try {
-      let query = supabase.from('articles').select('*').order('publish_date', { ascending: false })
-      if (filters?.category) query = query.eq('category', filters.category)
-      if (filters?.type) query = query.eq('type', filters.type)
-      if (filters?.featured) query = query.eq('featured', true)
-      if (filters?.limit) query = query.limit(filters.limit)
+      const f = JSON.parse(filtersJson) as {
+        category?: string; type?: string; limit?: number; featured?: boolean
+      }
+      let query = supabase
+        .from('articles')
+        .select('*')
+        .order('publish_date', { ascending: false }) // always newest first
+
+      if (f.category) query = query.eq('category', f.category)
+      if (f.type) query = query.eq('type', f.type)
+      if (f.featured) query = query.eq('featured', true)
+      if (f.limit) query = query.limit(f.limit)
+
       const { data, error } = await query
       return { data: data as Article[] | null, error }
     } catch {
       return { data: null, error: new Error('DB unavailable') }
     }
   },
-  ['articles-list'],
-  { revalidate: CACHE_TTL, tags: ['articles'] }
+  ['articles'],          // base key — args are appended automatically by Next.js
+  { revalidate: 60, tags: ['articles'] }   // ← 60 seconds so new posts appear fast
 )
 
-export const getArticleBySlug = unstable_cache(
+export async function getArticles(
+  filters?: { category?: string; type?: string; limit?: number; featured?: boolean }
+) {
+  return getCachedArticles(JSON.stringify(filters ?? {}))
+}
+
+// ─── Single article (5 min cache — content rarely changes mid-day) ────────────
+
+const getCachedArticleBySlug = unstable_cache(
   async (slug: string) => {
     try {
       const { data, error } = await supabase
@@ -104,45 +118,65 @@ export const getArticleBySlug = unstable_cache(
       return { data: null, error: new Error('DB unavailable') }
     }
   },
-  ['article-by-slug'],
-  { revalidate: CACHE_TTL, tags: ['articles'] }
+  ['article-slug'],
+  { revalidate: 300, tags: ['articles'] }  // 5 minutes
 )
 
-export const getArticlesByCategory = unstable_cache(
+export async function getArticleBySlug(slug: string) {
+  return getCachedArticleBySlug(slug)
+}
+
+// ─── Articles by category ─────────────────────────────────────────────────────
+
+const getCachedArticlesByCategory = unstable_cache(
   async (category: string) => {
     try {
       const { data, error } = await supabase
-        .from('articles').select('*').eq('category', category)
+        .from('articles')
+        .select('*')
+        .eq('category', category)
         .order('publish_date', { ascending: false })
       return { data: data as Article[] | null, error }
     } catch {
       return { data: null, error: new Error('DB unavailable') }
     }
   },
-  ['articles-by-category'],
-  { revalidate: CACHE_TTL, tags: ['articles'] }
+  ['articles-category'],
+  { revalidate: 60, tags: ['articles'] }
 )
 
-export const getAllSlugs = unstable_cache(
+export async function getArticlesByCategory(category: string) {
+  return getCachedArticlesByCategory(category)
+}
+
+// ─── All slugs (for sitemap) ──────────────────────────────────────────────────
+
+const getCachedAllSlugs = unstable_cache(
   async () => {
     try {
-      const { data, error } = await supabase.from('articles').select('slug')
-      return { data: data as { slug: string }[] | null, error }
+      const { data, error } = await supabase.from('articles').select('slug, updated_at, publish_date, featured')
+      return { data: data as { slug: string; updated_at?: string; publish_date: string; featured: boolean }[] | null, error }
     } catch {
       return { data: null, error: new Error('DB unavailable') }
     }
   },
-  ['all-slugs'],
-  { revalidate: CACHE_TTL, tags: ['articles'] }
+  ['slugs'],
+  { revalidate: 300, tags: ['articles'] }
 )
 
-// ─── Exam schedule queries (cached) ──────────────────────────────────────────
+export async function getAllSlugs() {
+  return getCachedAllSlugs()
+}
 
-export const getExamSchedules = unstable_cache(
-  async (classNum: '10' | '12') => {
+// ─── Exam schedules (24h cache — timetable never changes mid-season) ──────────
+
+const getCachedExamSchedules = unstable_cache(
+  async (classNum: string) => {
     try {
       const { data, error } = await supabase
-        .from('exam_schedules').select('*').eq('class', classNum)
+        .from('exam_schedules')
+        .select('*')
+        .eq('class', classNum)
         .order('exam_date', { ascending: true })
       return { data: data as ExamSchedule[] | null, error }
     } catch {
@@ -150,10 +184,14 @@ export const getExamSchedules = unstable_cache(
     }
   },
   ['exam-schedules'],
-  { revalidate: CACHE_TTL, tags: ['exam_schedules'] }
+  { revalidate: 86400, tags: ['exam_schedules'] }  // 24 hours
 )
 
-// ─── Site settings (cached) ───────────────────────────────────────────────────
+export async function getExamSchedules(classNum: '10' | '12') {
+  return getCachedExamSchedules(classNum)
+}
+
+// ─── Site settings ────────────────────────────────────────────────────────────
 
 export const getSiteSettings = unstable_cache(
   async () => {
@@ -165,5 +203,5 @@ export const getSiteSettings = unstable_cache(
     }
   },
   ['site-settings'],
-  { revalidate: CACHE_TTL, tags: ['site_settings'] }
+  { revalidate: 3600, tags: ['site_settings'] }
 )

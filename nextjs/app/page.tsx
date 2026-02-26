@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
 }
 
-export const revalidate = 3600 // cache rendered page for 1 hour
+export const revalidate = 60 // re-render every 60s so new articles appear fast
 
 export default async function HomePage() {
   // Fetch everything from Supabase in parallel
