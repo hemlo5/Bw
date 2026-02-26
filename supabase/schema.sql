@@ -22,6 +22,16 @@ CREATE TABLE IF NOT EXISTS articles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Exam Schedules table
+CREATE TABLE IF NOT EXISTS exam_schedules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  class TEXT NOT NULL CHECK (class IN ('10', '12')),
+  exam_date DATE NOT NULL,
+  subject TEXT NOT NULL,
+  time TEXT NOT NULL DEFAULT '10:30 AM - 1:30 PM',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Site settings table
 CREATE TABLE IF NOT EXISTS site_settings (
   id INTEGER PRIMARY KEY DEFAULT 1,
@@ -38,10 +48,17 @@ INSERT INTO site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 -- Enable Row Level Security
 ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE exam_schedules ENABLE ROW LEVEL SECURITY;
 
 -- Policies for public read access
+DROP POLICY IF EXISTS "Allow public read articles" ON articles;
 CREATE POLICY "Allow public read articles" ON articles FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public read settings" ON site_settings;
 CREATE POLICY "Allow public read settings" ON site_settings FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public read schedules" ON exam_schedules;
+CREATE POLICY "Allow public read schedules" ON exam_schedules FOR SELECT USING (true);
 
 -- Function to update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()

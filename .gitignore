@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Next.js
+nextjs/.next/
+nextjs/out/
+nextjs/node_modules/
+
+# Vite cache
+.vite/
+
+# OS
+Thumbs.db
