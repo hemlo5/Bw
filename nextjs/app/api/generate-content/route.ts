@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const SILICONFLOW_API_URL = 'https://api.siliconflow.cn/v1/chat/completions'
+const SILICONFLOW_API_URL = 'https://api.siliconflow.com/v1/chat/completions'
 const SILICONFLOW_MODEL = 'Qwen/Qwen2.5-72B-Instruct'
 
 const SYSTEM_PROMPT = `You are an expert SEO content writer and SQL developer for BoardsWallah — an Indian education website that publishes CBSE board exam papers, answer keys, and study material.
