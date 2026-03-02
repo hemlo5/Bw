@@ -172,6 +172,17 @@ export default async function HomePage() {
                     </>
                   )}
                 </ul>
+                {/* PYQ shortcut */}
+                <Link
+                  href="/cbse-class-10-previous-year-question-papers/"
+                  className="mt-4 flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 hover:bg-sky-100 transition-colors group"
+                >
+                  <span className="flex items-center gap-2 font-semibold text-sm">
+                    <FileText className="w-4 h-4" />
+                    Previous Year Papers (PYQ)
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
               </div>
 
               {/* Class 12 */}

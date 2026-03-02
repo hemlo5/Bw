@@ -1,0 +1,27 @@
+# robots.txt for boardswallah.com
+# Generated for CBSE Board Exam resources site
+
+User-agent: *
+Allow: /
+
+# Block admin panel from indexing
+Disallow: /admin/
+
+# Block API routes
+Disallow: /api/
+
+# Block in-site PDF viewer (not useful search content)
+Disallow: /pdf-viewer/
+
+# Allow major crawlers explicitly
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+# Sitemap location
+Sitemap: https://boardswallah.com/sitemap.xml

@@ -6,7 +6,7 @@ import Layout from '@/components/Layout'
 import {
   Sparkles, Copy, Check, Loader2, ExternalLink, Eye, EyeOff,
   FileText, ChevronDown, Trash2, AlertTriangle, RefreshCw, X,
-  Send, CheckCircle, XCircle, Clock,
+  Send, CheckCircle, XCircle, Clock, Zap, BarChart2,
 } from 'lucide-react'
 
 const ADMIN_PASSWORD = 'bw@admin2026'
@@ -45,9 +45,9 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 const LENGTHS = [
-  { id: 'small', label: 'Small', detail: '~500 words · 2-3 sections', color: 'text-green-600' },
-  { id: 'medium', label: 'Medium', detail: '~1000 words · 4-6 sections', color: 'text-blue-600' },
-  { id: 'large', label: 'Large', detail: '~2500 words · all sections + answers', color: 'text-purple-600' },
+  { id: 'small', label: 'Standard', detail: '~1500-2000 words · 4-6 sections', color: 'text-green-600' },
+  { id: 'medium', label: 'Detailed', detail: '~2500-3500 words · 7-10 sections + expert notes', color: 'text-blue-600' },
+  { id: 'large', label: 'Mega', detail: '~5000-7000 words · every section, FAQs, full solutions', color: 'text-purple-600' },
 ]
 
 const SUBJECTS_12 = ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'Accountancy', 'Business Studies', 'Economics', 'History', 'Geography', 'Political Science', 'English', 'Hindi', 'Computer Science', 'Physical Education']
@@ -58,7 +58,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loginError, setLoginError] = useState('')
-  const [activeTab, setActiveTab] = useState<'generator' | 'manage'>('generator')
+  const [activeTab, setActiveTab] = useState<'generator' | 'custom' | 'populate' | 'fix' | 'manage'>('generator')
 
   // Generator state
   const [subject, setSubject] = useState('')
@@ -91,6 +91,43 @@ export default function AdminPage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState('')
 
+  // Custom article state
+  const [customPrompt, setCustomPrompt] = useState('')
+  const [customCategory, setCustomCategory] = useState('Class 12')
+  const [customSubject, setCustomSubject] = useState('')
+  const [customType, setCustomType] = useState('Study Material')
+  const [customLength, setCustomLength] = useState('medium')
+  const [customLoading, setCustomLoading] = useState(false)
+  const [customError, setCustomError] = useState('')
+  const [customArticle, setCustomArticle] = useState<GeneratedArticle | null>(null)
+  const [customSQL, setCustomSQL] = useState('')
+  const [customPreview, setCustomPreview] = useState(false)
+  const [customPublishStatus, setCustomPublishStatus] = useState<PublishStatus>('idle')
+  const [customPublishError, setCustomPublishError] = useState('')
+
+  // Populate Pages state
+  type PopSlot = { class: string; subject: string; type: string; slug: string; hasArticle: boolean }
+  type SlotStatus = 'idle' | 'generating' | 'done' | 'error'
+  const [popSlots, setPopSlots] = useState<PopSlot[]>([])
+  const [popLoading, setPopLoading] = useState(false)
+  const [slotStatus, setSlotStatus] = useState<Record<string, SlotStatus>>({})
+  const [slotError, setSlotError] = useState<Record<string, string>>({})
+  const [popRunning, setPopRunning] = useState(false)
+
+  // Fix Articles (thin content) state
+  type ThinArticle = { id: string; slug: string; title: string; type: string; category: string; subject: string; contentLen: number }
+  type FixStatus = 'idle' | 'fixing' | 'done' | 'error'
+  const [thinArticles, setThinArticles] = useState<ThinArticle[]>([])
+  const [thinLoading, setThinLoading] = useState(false)
+  const [fixStatus, setFixStatus] = useState<Record<string, FixStatus>>({})
+  const [fixError, setFixError] = useState<Record<string, string>>({})
+  const [fixSQL, setFixSQL] = useState<Record<string, string>>({})
+  const [fixHint, setFixHint] = useState<Record<string, string>>({})
+  const [fixRaw, setFixRaw] = useState<Record<string, string>>({})
+  const [fixRunning, setFixRunning] = useState(false)
+  const [fixThreshold, setFixThreshold] = useState(1500)   // chars — filter
+  const [fixTargetChars, setFixTargetChars] = useState(3000)   // chars — output length
+
   // ─── Auth ──────────────────────────────────────────────────────────────────
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
@@ -111,7 +148,91 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (isAuthenticated && activeTab === 'manage') fetchArticles()
+    if (isAuthenticated && activeTab === 'populate') fetchPopSlots()
+    if (isAuthenticated && activeTab === 'fix') fetchThinArticles()
   }, [isAuthenticated, activeTab, fetchArticles])
+
+  const fetchThinArticles = async (threshold = fixThreshold) => {
+    setThinLoading(true)
+    const res = await fetch(`/api/repopulate-articles/?threshold=${threshold}`)
+    const data = await res.json()
+    setThinArticles(data.articles || [])
+    const init: Record<string, FixStatus> = {}
+      ; (data.articles || []).forEach((a: ThinArticle) => { init[a.slug] = 'idle' })
+    setFixStatus(prev => ({ ...init, ...prev }))
+    setThinLoading(false)
+  }
+
+  const fixArticle = async (article: ThinArticle) => {
+    setFixStatus(prev => ({ ...prev, [article.slug]: 'fixing' }))
+    setFixError(prev => { const n = { ...prev }; delete n[article.slug]; return n })
+    try {
+      const res = await fetch('/api/repopulate-articles/', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: article.slug, targetChars: fixTargetChars }),
+      })
+      const data = await res.json()
+      if (data.sql) setFixSQL(prev => ({ ...prev, [article.slug]: data.sql }))
+      if (data.rawText) setFixRaw(prev => ({ ...prev, [article.slug]: data.rawText }))
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed')
+      }
+      if (data.hint) setFixHint(prev => ({ ...prev, [article.slug]: data.hint }))
+      setFixStatus(prev => ({ ...prev, [article.slug]: 'done' }))
+      setThinArticles(prev => prev.map(a => a.slug === article.slug ? { ...a, contentLen: 9999 } : a))
+    } catch (err: any) {
+      setFixStatus(prev => ({ ...prev, [article.slug]: 'error' }))
+      setFixError(prev => ({ ...prev, [article.slug]: err.message }))
+    }
+  }
+
+  const fixAllThin = async () => {
+    const pending = thinArticles.filter(a => fixStatus[a.slug] !== 'done')
+    setFixRunning(true)
+    for (const article of pending) {
+      await fixArticle(article)
+    }
+    setFixRunning(false)
+  }
+
+  const fetchPopSlots = async () => {
+    setPopLoading(true)
+    const res = await fetch('/api/populate-page/')
+    const data = await res.json()
+    setPopSlots(data.slots || [])
+    // Init statuses for empty slots
+    const init: Record<string, SlotStatus> = {}
+      ; (data.slots || []).forEach((s: PopSlot) => { if (!s.hasArticle) init[s.slug] = 'idle' })
+    setSlotStatus(prev => ({ ...init, ...prev }))
+    setPopLoading(false)
+  }
+
+  const generateSlot = async (slot: PopSlot) => {
+    setSlotStatus(prev => ({ ...prev, [slot.slug]: 'generating' }))
+    setSlotError(prev => { const n = { ...prev }; delete n[slot.slug]; return n })
+    try {
+      const res = await fetch('/api/populate-page/', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class: slot.class, subject: slot.subject, type: slot.type }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      setSlotStatus(prev => ({ ...prev, [slot.slug]: 'done' }))
+      setPopSlots(prev => prev.map(s => s.slug === slot.slug ? { ...s, hasArticle: true } : s))
+    } catch (err: any) {
+      setSlotStatus(prev => ({ ...prev, [slot.slug]: 'error' }))
+      setSlotError(prev => ({ ...prev, [slot.slug]: err.message }))
+    }
+  }
+
+  const generateAllEmpty = async () => {
+    const empty = popSlots.filter(s => !s.hasArticle && slotStatus[s.slug] !== 'done')
+    setPopRunning(true)
+    for (const slot of empty) {
+      await generateSlot(slot)
+    }
+    setPopRunning(false)
+  }
 
   // ─── Generator ─────────────────────────────────────────────────────────────
   const toggleType = (id: string) =>
@@ -166,6 +287,42 @@ export default function AdminPage() {
       if (publishStatus[article.slug] !== 'success') {
         await publishArticle(article)
       }
+    }
+  }
+
+  // ─── Custom article generate ────────────────────────────────────────────────
+  const handleGenerateCustom = async () => {
+    if (!customPrompt.trim()) { setCustomError('Please enter a prompt'); return }
+    setCustomError(''); setCustomLoading(true)
+    setCustomArticle(null); setCustomSQL('')
+    setCustomPublishStatus('idle'); setCustomPublishError('')
+    try {
+      const res = await fetch('/api/generate-custom/', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: customPrompt, category: customCategory, subject: customSubject, articleType: customType, length: customLength }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Generation failed')
+      setCustomArticle(data.article)
+      setCustomSQL(data.sql || '')
+    } catch (err: any) { setCustomError(err.message) }
+    finally { setCustomLoading(false) }
+  }
+
+  const publishCustomArticle = async () => {
+    if (!customArticle) return
+    setCustomPublishStatus('publishing'); setCustomPublishError('')
+    try {
+      const res = await fetch('/api/publish-articles/', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ article: customArticle }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Publish failed')
+      setCustomPublishStatus('success')
+    } catch (err: any) {
+      setCustomPublishStatus('error')
+      setCustomPublishError(err.message)
     }
   }
 
@@ -247,9 +404,12 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit flex-wrap">
           {[
-            { id: 'generator', label: 'AI Generator', icon: <Sparkles className="w-4 h-4" /> },
+            { id: 'generator', label: 'Board Papers', icon: <Sparkles className="w-4 h-4" /> },
+            { id: 'custom', label: 'Custom Article', icon: <Send className="w-4 h-4" /> },
+            { id: 'populate', label: 'Populate Pages', icon: <Zap className="w-4 h-4" /> },
+            { id: 'fix', label: `Fix Articles${thinArticles.length ? ` (${thinArticles.filter(a => fixStatus[a.slug] !== 'done').length})` : ''}`, icon: <AlertTriangle className="w-4 h-4 text-orange-500" /> },
             { id: 'manage', label: `Manage Articles${articles.length ? ` (${articles.length})` : ''}`, icon: <FileText className="w-4 h-4" /> },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
@@ -554,6 +714,486 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══ CUSTOM ARTICLE TAB ══ */}
+        {activeTab === 'custom' && (
+          <div className="max-w-3xl space-y-5">
+
+            {/* Prompt */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <p className="text-sm font-semibold text-gray-700 mb-2">Your Prompt</p>
+              <textarea
+                value={customPrompt} onChange={e => setCustomPrompt(e.target.value)}
+                rows={5} placeholder={`Examples:\n• Write a detailed study guide for CBSE Class 12 Chemistry Chapter 1 — The Solid State\n• Top 10 tips to score 95+ in CBSE Board Exams 2026\n• CBSE Class 10 Science electricity chapter important questions and MCQs`}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-y min-h-[120px]"
+              />
+            </div>
+
+            {/* Config row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Category */}
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                <p className="text-xs font-semibold text-gray-500 mb-2">CATEGORY</p>
+                <div className="space-y-1.5">
+                  {['Class 10', 'Class 12', 'General'].map(c => (
+                    <button key={c} onClick={() => setCustomCategory(c)}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${customCategory === c ? 'bg-black text-white' : 'hover:bg-gray-100 text-gray-700'}`}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Article type */}
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                <p className="text-xs font-semibold text-gray-500 mb-2">TYPE</p>
+                <select value={customType} onChange={e => setCustomType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+                  {['Study Material', 'News', 'Analysis', 'Question Paper', 'Answer Key', 'Important Questions', 'Syllabus', 'General'].map(t => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+                <input value={customSubject} onChange={e => setCustomSubject(e.target.value)}
+                  placeholder="Subject (optional)" className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400" />
+              </div>
+
+              {/* Length */}
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                <p className="text-xs font-semibold text-gray-500 mb-2">LENGTH</p>
+                <div className="space-y-1.5">
+                  {LENGTHS.map(l => (
+                    <button key={l.id} onClick={() => setCustomLength(l.id)}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all border ${customLength === l.id ? 'border-sky-400 bg-sky-50' : 'border-transparent hover:bg-gray-50'}`}>
+                      <span className={`font-bold ${l.color}`}>{l.label}</span>
+                      <span className="text-gray-500 ml-1">{l.detail}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Generate button */}
+            {customError && <p className="text-red-500 text-sm">{customError}</p>}
+            <button onClick={handleGenerateCustom} disabled={customLoading || !customPrompt.trim()}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all ${customLoading || !customPrompt.trim() ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800'
+                }`}>
+              {customLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Generating...</> : <><Sparkles className="w-4 h-4" />Generate Article</>}
+            </button>
+
+            {/* Result */}
+            {customArticle && (
+              <div className="bg-white rounded-xl border border-sky-200 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between p-4 bg-sky-50 border-b border-sky-100">
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">{customArticle.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 font-mono">boardswallah.com/article/{customArticle.slug}/</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => setCustomPreview(v => !v)}
+                      className="p-2 rounded-lg hover:bg-white/60 text-sky-600 transition-colors" title="Toggle preview">
+                      {customPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    {/* Publish button */}
+                    {customPublishStatus === 'idle' && (
+                      <button onClick={publishCustomArticle}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-black text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors">
+                        <Send className="w-3.5 h-3.5" />Publish
+                      </button>
+                    )}
+                    {customPublishStatus === 'publishing' && (
+                      <span className="flex items-center gap-1.5 px-4 py-2 bg-sky-100 text-sky-700 rounded-lg text-xs font-bold">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />Publishing…
+                      </span>
+                    )}
+                    {customPublishStatus === 'success' && (
+                      <span className="flex items-center gap-1.5 px-4 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-bold">
+                        <CheckCircle className="w-3.5 h-3.5" />Published!
+                      </span>
+                    )}
+                    {customPublishStatus === 'error' && (
+                      <button onClick={publishCustomArticle}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-xs font-bold hover:bg-red-200">
+                        <XCircle className="w-3.5 h-3.5" />Retry
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {customPublishError && (
+                  <p className="px-4 py-2 text-xs text-red-600 bg-red-50 border-b border-red-100 font-mono">{customPublishError}</p>
+                )}
+
+                {/* HTML preview */}
+                {customPreview && (
+                  <div className="p-4 border-t border-gray-100 prose prose-sm max-w-none max-h-96 overflow-y-auto"
+                    dangerouslySetInnerHTML={{ __html: customArticle.content }} />
+                )}
+
+                {/* SQL */}
+                <details className="border-t border-gray-100">
+                  <summary className="px-4 py-2 text-xs text-gray-400 cursor-pointer hover:text-gray-600 select-none">Show SQL</summary>
+                  <div className="relative">
+                    <pre className="p-4 text-xs font-mono text-gray-700 overflow-x-auto bg-gray-50 max-h-48">{customSQL}</pre>
+                    <button onClick={() => { navigator.clipboard.writeText(customSQL); }}
+                      className="absolute top-2 right-2 p-1.5 bg-white border rounded-lg text-gray-400 hover:text-gray-700">
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </details>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══ FIX ARTICLES TAB ══ */}
+        {activeTab === 'fix' && (
+          <div className="space-y-5">
+
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  Fix Empty / Thin Articles
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Articles with placeholder or very short content. AI will rewrite them fully.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {thinArticles.length > 0 && (
+                  <div className="flex gap-3 text-sm">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg font-medium">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      {thinArticles.filter(a => fixStatus[a.slug] !== 'done').length} need fixing
+                    </span>
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      {thinArticles.filter(a => fixStatus[a.slug] === 'done').length} fixed
+                    </span>
+                  </div>
+                )}
+                <button onClick={() => fetchThinArticles(fixThreshold)} disabled={thinLoading}
+                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 transition-colors">
+                  <RefreshCw className={`w-4 h-4 ${thinLoading ? 'animate-spin' : ''}`} />
+                </button>
+                <button onClick={fixAllThin}
+                  disabled={fixRunning || thinLoading || thinArticles.filter(a => fixStatus[a.slug] !== 'done').length === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all ${fixRunning ? 'bg-orange-100 text-orange-700' :
+                    thinArticles.filter(a => fixStatus[a.slug] !== 'done').length === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' :
+                      'bg-black text-white hover:bg-gray-800'
+                    }`}>
+                  {fixRunning
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />Fixing all...</>
+                    : <><Zap className="w-4 h-4" />Fix All</>}
+                </button>
+              </div>
+            </div>
+
+            {/* ── Controls row ── */}
+            <div className="flex flex-wrap gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+              {/* Filter threshold */}
+              <div className="flex-1 min-w-[220px]">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Show articles shorter than
+                </label>
+                <div className="flex items-center gap-2">
+                  <select value={fixThreshold} onChange={e => setFixThreshold(Number(e.target.value))}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+                    {[500, 1000, 1500, 2000, 3000, 5000, 8000, 15000].map(v => (
+                      <option key={v} value={v}>{v.toLocaleString()} chars</option>
+                    ))}
+                  </select>
+                  <button onClick={() => fetchThinArticles(fixThreshold)} disabled={thinLoading}
+                    className="px-3 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors disabled:opacity-50">
+                    Apply
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Currently showing {thinArticles.length} articles under {fixThreshold.toLocaleString()} chars</p>
+              </div>
+
+              {/* Target output length */}
+              <div className="flex-1 min-w-[220px]">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Target content length (AI output)
+                </label>
+                <select value={fixTargetChars} onChange={e => setFixTargetChars(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+                  {[
+                    { v: 1000, label: '~1,000 chars  · ~200 words   (fastest)' },
+                    { v: 2000, label: '~2,000 chars  · ~400 words' },
+                    { v: 3000, label: '~3,000 chars  · ~600 words   (default)' },
+                    { v: 5000, label: '~5,000 chars  · ~1,000 words' },
+                    { v: 8000, label: '~8,000 chars  · ~1,600 words  (detailed)' },
+                    { v: 14000, label: '~14,000 chars · ~2,800 words  (mega)' },
+                    { v: 20000, label: '~20,000 chars · ~4,000 words  (ultra)' },
+                    { v: 30000, label: '~30,000 chars · ~6,000 words  (max)' },
+                  ].map(({ v, label }) => (
+                    <option key={v} value={v}>{label}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Applies to every Fix / Fix All click below</p>
+              </div>
+            </div>
+
+            {thinLoading && (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            )}
+
+            {!thinLoading && thinArticles.length === 0 && (
+              <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                <p className="font-semibold text-gray-700">All articles have real content!</p>
+                <p className="text-sm text-gray-400 mt-1">No thin or placeholder articles found.</p>
+              </div>
+            )}
+
+            {!thinLoading && thinArticles.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="grid grid-cols-12 text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-2.5 bg-gray-50 border-b">
+                  <span className="col-span-5">Title</span>
+                  <span className="col-span-2">Type</span>
+                  <span className="col-span-2">Subject</span>
+                  <span className="col-span-1 text-right">Chars</span>
+                  <span className="col-span-2 text-right">Action</span>
+                </div>
+                <div className="divide-y divide-gray-50 max-h-[700px] overflow-y-auto">
+                  {thinArticles.map(article => {
+                    const st = fixStatus[article.slug] || 'idle'
+                    return (
+                      <div key={article.slug} className={`transition-colors ${st === 'done' && !fixSQL[article.slug] ? 'opacity-60' : ''}`}>
+                        {/* Main row */}
+                        <div className="grid grid-cols-12 items-center px-4 py-3 hover:bg-gray-50">
+                          <div className="col-span-5 min-w-0 pr-4">
+                            <p className="text-sm font-medium text-gray-900 line-clamp-1">{article.title}</p>
+                            <p className="text-xs text-gray-400 font-mono mt-0.5 line-clamp-1">{article.slug}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <span className={`text-xs px-2 py-0.5 rounded font-medium ${TYPE_COLORS[article.type] || 'bg-gray-100 text-gray-600'}`}>{article.type}</span>
+                          </div>
+                          <span className="col-span-2 text-xs text-gray-500">{article.subject || '—'}</span>
+                          <span className={`col-span-1 text-xs font-mono text-right font-semibold ${article.contentLen < 500 ? 'text-red-500' : 'text-orange-500'}`}>{article.contentLen}</span>
+                          <div className="col-span-2 flex justify-end gap-2">
+                            {st === 'idle' && (
+                              <button onClick={() => fixArticle(article)}
+                                className="flex items-center gap-1 text-xs px-3 py-1.5 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors">
+                                <Zap className="w-3 h-3" />Fix
+                              </button>
+                            )}
+                            {st === 'fixing' && (
+                              <span className="flex items-center gap-1 text-xs text-sky-600 font-medium">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />Fixing…
+                              </span>
+                            )}
+                            {st === 'done' && (
+                              <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                                <CheckCircle className="w-3.5 h-3.5" />Fixed!
+                              </span>
+                            )}
+                            {st === 'error' && (
+                              <button onClick={() => fixArticle(article)}
+                                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium">
+                                <XCircle className="w-3.5 h-3.5" />Retry
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Error details + SQL fallback */}
+                        {(fixError[article.slug] || fixSQL[article.slug]) && (
+                          <div className="px-4 pb-4 space-y-2 bg-red-50 border-t border-red-100">
+                            {fixError[article.slug] && (
+                              <div className="pt-3">
+                                <p className="text-xs font-semibold text-red-700 flex items-center gap-1.5">
+                                  <XCircle className="w-3.5 h-3.5" />Error
+                                </p>
+                                <p className="text-xs text-red-600 mt-1 font-mono break-all">{fixError[article.slug]}</p>
+                                {fixHint[article.slug] && (
+                                  <p className="text-xs text-orange-600 mt-1.5 bg-orange-50 border border-orange-200 rounded px-2 py-1">
+                                    💡 {fixHint[article.slug]}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {fixSQL[article.slug] && (
+                              <div>
+                                <div className="flex items-center justify-between mb-1 pt-1">
+                                  <p className="text-xs font-semibold text-gray-700">SQL — paste in Supabase SQL Editor</p>
+                                  <button onClick={() => navigator.clipboard.writeText(fixSQL[article.slug])}
+                                    className="flex items-center gap-1 text-xs px-2 py-1 bg-gray-800 text-white rounded hover:bg-black transition-colors">
+                                    <Copy className="w-3 h-3" />Copy SQL
+                                  </button>
+                                </div>
+                                <pre className="text-xs font-mono bg-gray-900 text-green-400 p-3 rounded-lg overflow-x-auto max-h-40 whitespace-pre-wrap break-all">{fixSQL[article.slug]}</pre>
+                              </div>
+                            )}
+                            {fixRaw[article.slug] && (
+                              <details className="mt-2">
+                                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700 select-none flex items-center gap-1">
+                                  <ChevronDown className="w-3 h-3" />Raw AI Response (debug)
+                                </summary>
+                                <div className="mt-1 relative">
+                                  <button onClick={() => navigator.clipboard.writeText(fixRaw[article.slug])}
+                                    className="absolute top-2 right-2 flex items-center gap-1 text-xs px-2 py-1 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition-colors z-10">
+                                    <Copy className="w-3 h-3" />Copy
+                                  </button>
+                                  <pre className="text-xs font-mono bg-gray-950 text-yellow-300 p-3 rounded-lg overflow-x-auto max-h-64 whitespace-pre-wrap break-all pr-16">{fixRaw[article.slug]}</pre>
+                                </div>
+                              </details>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══ POPULATE PAGES TAB ══ */}
+        {activeTab === 'populate' && (
+          <div className="space-y-6">
+
+            {/* Header + stats */}
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Populate Empty Pages</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  AI generates + auto-publishes Study Material, Important Questions and Syllabus for every subject.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Stats */}
+                {popSlots.length > 0 && (
+                  <div className="flex gap-3 text-sm">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      {popSlots.filter(s => s.hasArticle || slotStatus[s.slug] === 'done').length} done
+                    </span>
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg font-medium">
+                      <Clock className="w-3.5 h-3.5" />
+                      {popSlots.filter(s => !s.hasArticle && slotStatus[s.slug] !== 'done').length} missing
+                    </span>
+                  </div>
+                )}
+                <button onClick={fetchPopSlots} disabled={popLoading}
+                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 transition-colors">
+                  <RefreshCw className={`w-4 h-4 ${popLoading ? 'animate-spin' : ''}`} />
+                </button>
+                <button onClick={generateAllEmpty}
+                  disabled={popRunning || popLoading || popSlots.filter(s => !s.hasArticle && slotStatus[s.slug] !== 'done').length === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all ${popRunning ? 'bg-yellow-100 text-yellow-700' :
+                    popSlots.filter(s => !s.hasArticle && slotStatus[s.slug] !== 'done').length === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' :
+                      'bg-black text-white hover:bg-gray-800'
+                    }`}>
+                  {popRunning
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />Generating all...</>
+                    : <><Zap className="w-4 h-4" />Generate All Empty</>}
+                </button>
+              </div>
+            </div>
+
+            {popLoading && (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            )}
+
+            {!popLoading && popSlots.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <BarChart2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p>Click refresh to load page status</p>
+              </div>
+            )}
+
+            {/* Class 12 */}
+            {!popLoading && popSlots.some(s => s.class === 'Class 12') && (
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">12</span>
+                  Class 12
+                </h3>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="grid grid-cols-4 gap-0 text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 bg-gray-50 border-b">
+                    <span>Subject</span><span>Study Material</span><span>Important Qs</span><span>Syllabus</span>
+                  </div>
+                  {Array.from(new Set(popSlots.filter(s => s.class === 'Class 12').map(s => s.subject))).map(subject => (
+                    <div key={subject} className="grid grid-cols-4 gap-0 items-center px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                      <span className="text-sm font-medium text-gray-800">{subject}</span>
+                      {['Study Material', 'Important Questions', 'Syllabus'].map(type => {
+                        const slot = popSlots.find(s => s.class === 'Class 12' && s.subject === subject && s.type === type)
+                        if (!slot) return <span key={type} />
+                        const st = slot.hasArticle ? 'done' : (slotStatus[slot.slug] || 'idle')
+                        return (
+                          <div key={type} className="flex items-center gap-2">
+                            {st === 'done' && <span className="flex items-center gap-1 text-xs text-green-600 font-medium"><CheckCircle className="w-3.5 h-3.5" />Done</span>}
+                            {st === 'generating' && <span className="flex items-center gap-1 text-xs text-sky-600 font-medium"><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating</span>}
+                            {st === 'error' && (
+                              <button onClick={() => generateSlot(slot)} className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium">
+                                <XCircle className="w-3.5 h-3.5" />Retry
+                              </button>
+                            )}
+                            {st === 'idle' && (
+                              <button onClick={() => generateSlot(slot)}
+                                className="flex items-center gap-1 text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 font-medium transition-colors">
+                                <Zap className="w-3 h-3" />Generate
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Class 10 */}
+            {!popLoading && popSlots.some(s => s.class === 'Class 10') && (
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-sky-600 text-white rounded-full flex items-center justify-center text-xs font-bold">10</span>
+                  Class 10
+                </h3>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="grid grid-cols-4 gap-0 text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-2 bg-gray-50 border-b">
+                    <span>Subject</span><span>Study Material</span><span>Important Qs</span><span>Syllabus</span>
+                  </div>
+                  {Array.from(new Set(popSlots.filter(s => s.class === 'Class 10').map(s => s.subject))).map(subject => (
+                    <div key={subject} className="grid grid-cols-4 gap-0 items-center px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                      <span className="text-sm font-medium text-gray-800">{subject}</span>
+                      {['Study Material', 'Important Questions', 'Syllabus'].map(type => {
+                        const slot = popSlots.find(s => s.class === 'Class 10' && s.subject === subject && s.type === type)
+                        if (!slot) return <span key={type} />
+                        const st = slot.hasArticle ? 'done' : (slotStatus[slot.slug] || 'idle')
+                        return (
+                          <div key={type} className="flex items-center gap-2">
+                            {st === 'done' && <span className="flex items-center gap-1 text-xs text-green-600 font-medium"><CheckCircle className="w-3.5 h-3.5" />Done</span>}
+                            {st === 'generating' && <span className="flex items-center gap-1 text-xs text-sky-600 font-medium"><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating</span>}
+                            {st === 'error' && (
+                              <button onClick={() => generateSlot(slot)} className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium">
+                                <XCircle className="w-3.5 h-3.5" />Retry
+                              </button>
+                            )}
+                            {st === 'idle' && (
+                              <button onClick={() => generateSlot(slot)}
+                                className="flex items-center gap-1 text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 font-medium transition-colors">
+                                <Zap className="w-3 h-3" />Generate
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

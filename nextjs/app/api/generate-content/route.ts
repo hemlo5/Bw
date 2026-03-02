@@ -3,11 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 const SILICONFLOW_API_URL = 'https://api.siliconflow.com/v1/chat/completions'
 const SILICONFLOW_MODEL = 'Qwen/Qwen2.5-72B-Instruct'
 
+export const maxDuration = 300
+export const dynamic = 'force-dynamic'
+
 const LENGTH_GUIDES: Record<string, string> = {
-    small: 'Small (~400-600 words). 2-3 short sections. Tables with 3-4 rows max.',
-    medium: 'Medium (~800-1200 words). 4-6 sections. Tables with 6-8 rows. Good detail on each point.',
-    large: 'Large (~2000-3000 words). All sections with maximum detail. Tables with 10+ rows. Full solutions, student reactions, expert commentary, step-by-step answers.',
+    small: 'Standard article (~1500-2000 words). 4-6 full sections. Tables with 6-8 rows. Include all standard sections for the content type with decent detail. Good for quick reads.',
+    medium: 'Detailed article (~2500-3500 words). 7-10 sections. Large tables (10-12 rows). Full explanations for every answer/concept. Section-wise breakdown with commentary. Include student tips and expert notes.',
+    large: 'Exhaustive mega-article (~5000-7000 words). Every possible section covered in extreme depth. Very large tables (15-20+ rows). Complete step-by-step solutions with working shown. Multiple sub-sections per chapter/topic. Student reactions, expert analysis, comparison tables, FAQs section (10+ Q&As), common mistakes section, last-minute tips, grade predictions, cutoff analysis — EVERYTHING.',
 }
+
 
 const SYSTEM_PROMPT = `You are an expert SEO content writer for BoardsWallah — India's CBSE board exam website. You generate structured article data as JSON.
 
@@ -153,10 +157,11 @@ Return ONLY the JSON array starting with [ and ending with ].`
                     { role: 'system', content: SYSTEM_PROMPT },
                     { role: 'user', content: userPrompt },
                 ],
-                max_tokens: 14000,
+                max_tokens: 8000,
                 temperature: 0.6,
                 stream: false,
             }),
+            signal: AbortSignal.timeout(240_000),
         })
 
         if (!response.ok) {

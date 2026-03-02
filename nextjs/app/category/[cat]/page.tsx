@@ -2,7 +2,8 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
 import { getArticlesByCategory } from '@/lib/supabase'
-import { ChevronRight, FileText } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+import { ChevronRight, FileText, BookOpen } from 'lucide-react'
 
 interface Props {
   params: Promise<{ cat: string }>
@@ -28,7 +29,19 @@ export const revalidate = 60
 export default async function CategoryPage({ params }: Props) {
   const { cat } = await params
   const category = cat === 'class-10' ? 'Class 10' : 'Class 12'
-  const { data: articles } = await getArticlesByCategory(category)
+  const isClass10 = cat === 'class-10'
+
+  // Fetch articles + PYQ count (parallel)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const [{ data: articles }, { count: pyqCount }] = await Promise.all([
+    getArticlesByCategory(category),
+    isClass10
+      ? supabase.from('pyq_papers').select('id', { count: 'exact', head: true }).eq('class', 'Class 10')
+      : Promise.resolve({ count: 0 }),
+  ])
 
   // Group articles by type
   const articlesByType = articles?.reduce((acc, article) => {
@@ -71,6 +84,30 @@ export default async function CategoryPage({ params }: Props) {
 
         {/* Subcategories Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
+
+          {/* PYQ Card — Class 10 only, shown first and highlighted */}
+          {isClass10 && (
+            <Link
+              href="/cbse-class-10-previous-year-question-papers/"
+              className="col-span-2 md:col-span-3 bg-gradient-to-r from-sky-600 to-cyan-500 rounded-xl shadow-lg p-5 hover:shadow-xl hover:from-sky-700 hover:to-cyan-600 transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-lg">Previous Year Question Papers (PYQ)</h3>
+                    <p className="text-sky-100 text-sm mt-0.5">
+                      {pyqCount ? `${pyqCount}+ papers` : 'All subjects'} · All sets · Free PDF download
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-6 h-6 text-white group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </div>
+            </Link>
+          )}
+
           {subcategories.map((sub) => (
             <Link
               key={sub.slug}
