@@ -4,6 +4,9 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  experimental: {
+    instrumentationHook: true,
+  },
 }
 
 module.exports = nextConfig
