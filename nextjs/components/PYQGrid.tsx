@@ -42,9 +42,16 @@ interface SubjectGroup {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const CORE_SUBJECTS = [
+const CORE_SUBJECTS_10 = [
     'Science', 'Mathematics Standard', 'Mathematics Basic', 'Social Science',
     'English Language and Literature', 'Hindi Course A', 'Hindi Course B', 'English Communicative',
+]
+
+const CORE_SUBJECTS_12 = [
+    'Physics', 'Chemistry', 'Biology', 'Mathematics',
+    'English Core', 'Hindi Core',
+    'Accountancy', 'Economics', 'Business Studies',
+    'History', 'Geography', 'Political Science',
 ]
 
 const SUBJECT_ICONS: Record<string, string> = {
@@ -59,10 +66,11 @@ const SUBJECT_ICONS: Record<string, string> = {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-export default function PYQPage({ papers }: { papers: PYQPaper[] }) {
+export default function PYQPage({ papers, classLevel = '10' }: { papers: PYQPaper[], classLevel?: '10' | '12' }) {
     const [search, setSearch] = useState('')
     const [expandedSlug, setExpanded] = useState<string | null>(null)
     const [showAll, setShowAll] = useState(false)
+    const CORE_SUBJECTS = classLevel === '12' ? CORE_SUBJECTS_12 : CORE_SUBJECTS_10
 
     const groups: SubjectGroup[] = useMemo(() => {
         const map: Record<string, PYQPaper[]> = {}
@@ -109,12 +117,12 @@ export default function PYQPage({ papers }: { papers: PYQPaper[] }) {
                     <div className="flex items-center gap-2 text-sky-400 text-sm font-medium mb-3">
                         <a href="/" className="hover:underline">Home</a>
                         <span>/</span>
-                        <a href="/category/class-10/" className="hover:underline">Class 10</a>
+                        <a href={`/category/class-${classLevel}/`} className="hover:underline">Class {classLevel}</a>
                         <span>/</span>
-                        <a href="/cbse-class-10-previous-year-question-papers/" className="hover:underline">Previous Year Papers</a>
+                        <a href={`/cbse-class-${classLevel}-previous-year-question-papers/`} className="hover:underline">Previous Year Papers</a>
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold mb-3">
-                        CBSE Class 10 Previous Year Question Papers
+                        CBSE Class {classLevel} Previous Year Question Papers
                     </h1>
                     <p className="text-gray-400 text-lg mb-6">
                         All sets and series for all subjects. View or download free PDFs.
@@ -189,8 +197,8 @@ export default function PYQPage({ papers }: { papers: PYQPaper[] }) {
 
                 {/* SEO text */}
                 <div className="mt-12 bg-white rounded-2xl border border-gray-100 p-6 text-sm text-gray-600 space-y-2">
-                    <h2 className="text-base font-bold text-gray-900">About CBSE Class 10 PYQ Papers</h2>
-                    <p>These are official CBSE Class 10 Previous Year Question Papers for all subjects. CBSE Main Exam papers cover the standard sets, Extra Papers cover outside Delhi regions, and Compartment Papers are for supplementary exams. All papers are free to view and download.</p>
+                    <h2 className="text-base font-bold text-gray-900">About CBSE Class {classLevel} PYQ Papers</h2>
+                    <p>These are official CBSE Class {classLevel} Previous Year Question Papers for all subjects. CBSE Main Exam papers cover the standard sets, Extra Papers cover outside Delhi regions, and Compartment Papers are for supplementary exams. All papers are free to view and download.</p>
                     <p>Solving PYQs is the most effective way to prepare for CBSE board exams — they reveal the exam pattern, marks distribution, and most important topics.</p>
                 </div>
             </div>
