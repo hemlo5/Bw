@@ -30,6 +30,9 @@ export default async function CategoryPage({ params }: Props) {
   const { cat } = await params
   const category = cat === 'class-10' ? 'Class 10' : 'Class 12'
   const isClass10 = cat === 'class-10'
+  const isClass12 = cat === 'class-12'
+  const hasPYQ = isClass10 || isClass12
+  const pyqClass = isClass10 ? 'Class 10' : 'Class 12'
 
   // Fetch articles + PYQ count (parallel)
   const supabase = createClient(
@@ -38,8 +41,8 @@ export default async function CategoryPage({ params }: Props) {
   )
   const [{ data: articles }, { count: pyqCount }] = await Promise.all([
     getArticlesByCategory(category),
-    isClass10
-      ? supabase.from('pyq_papers').select('id', { count: 'exact', head: true }).eq('class', 'Class 10')
+    hasPYQ
+      ? supabase.from('pyq_papers').select('id', { count: 'exact', head: true }).eq('class', pyqClass)
       : Promise.resolve({ count: 0 }),
   ])
 
@@ -85,10 +88,10 @@ export default async function CategoryPage({ params }: Props) {
         {/* Subcategories Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
 
-          {/* PYQ Card — Class 10 only, shown first and highlighted */}
-          {isClass10 && (
+          {/* PYQ Card — shown for Class 10 and Class 12 */}
+          {hasPYQ && (
             <Link
-              href="/cbse-class-10-previous-year-question-papers/"
+              href={`/cbse-class-${isClass10 ? '10' : '12'}-previous-year-question-papers/`}
               className="col-span-2 md:col-span-3 bg-gradient-to-r from-sky-600 to-cyan-500 rounded-xl shadow-lg p-5 hover:shadow-xl hover:from-sky-700 hover:to-cyan-600 transition-all group"
             >
               <div className="flex items-center justify-between">
